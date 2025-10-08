@@ -3,7 +3,6 @@
 - 🌱 I’m currently learning front end , ui/ux.
 - 📫 How to reach me - jainprabhav1437@gmail.com
 - 😄 Pronouns: He/Him
-- ⚡ Fun fact: After watching social network i also tried to make something on my father's laptop but instead ended up cooking the battery which led to leakage of chemicals and smoke 😜
 [![An image of @prabhav1437's Holopin badges, which is a link to view their full Holopin profile](https://holopin.me/prabhav1437)](https://holopin.io/@prabhav1437)
 <!---
 Prabhav1437/Prabhav1437 is a ✨ special ✨ repository because its `README.md` (this file) appears on your GitHub profile.
