@@ -37,7 +37,14 @@
 
 <p align="center">
   <img src="https://github-readme-stats.vercel.app/api?username=Prabhav1437&show_icons=true&theme=tokyonight" height="180px"/>
-  <img src="https://github-readme-streak-stats.herokuapp.com/?user=Prabhav1437&theme=tokyonight" height="180px"/>
+</p>
+
+---
+
+### My GitHub Activity
+
+<p align = "center">
+  <img src="https://github-readme-activity-graph.vercel.app/graph?username=Prabhav1437&theme=react-dark"/>
 </p>
 
 ---
