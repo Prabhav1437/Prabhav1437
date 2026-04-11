@@ -52,7 +52,7 @@
 ### My GitHub Stats
 
 <p align="center">
-  <img src="https://github-readme-stats.vercel.app/api?username=Prabhav1437&show_icons=true&theme=tokyonight" height="180px"/>
+  <img src="https://github-readme-stats-sigma-five.vercel.app/api?username=Prabhav1437" height="180px"/>
 </p>
 
 ---
