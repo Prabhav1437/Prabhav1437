@@ -65,19 +65,6 @@
 
 ---
 
-### Most Used Languages
-<p align="center">
-  <img src="https://github-readme-stats.vercel.app/api/top-langs/?username=Prabhav1437&layout=compact&theme=tokyonight" />
-</p>
-
----
-
-### GitHub Trophies
-<p align="center">
-  <img src="https://github-profile-trophy.vercel.app/?username=Prabhav1437&theme=dracula&margin-w=15&no-bg=true" />
-</p>
-
----
 
 ### Hacktoberfest
 <p align="center">
@@ -85,14 +72,6 @@
     <img src="https://holopin.me/prabhav1437" alt="Holopin badges of @prabhav1437" />
   </a>
 </p>
----
-
-### Featured Projects
-
-- [Automatic Shopping Cart (RFID + Raspberry Pi)](https://github.com/Prabhav1437/automatic-shopping-cart)
-- [Marvel Fandom Website](https://marvel-fandom-three.vercel.app)
-- [Xplnhub Insight-py Frontend Website](https://github.com/XplnHUB/xplnhub-insight-py)
----
 
 ### Connect With Me
 
