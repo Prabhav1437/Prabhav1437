@@ -1,6 +1,7 @@
 
-<h1 align="center">Hi 👋, I'm Prabhav Jain</h1>
-<h3 align="center">Tech Enthusiast</h3>
+<h1 align="center">Hi, I'm Prabhav</h1>
+
+<img src = "https://i.pinimg.com/originals/6f/86/c6/6f86c6c9fb203e3bd8e81861819f4cb5.gif" width = 1000 />
 
 ---
 
