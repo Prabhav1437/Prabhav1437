@@ -7,7 +7,7 @@
 
 ### About Me
 
--  I’m passionate about **coding, building projects, and experimenting with creative ideas**  
+-  I’m passionate about **building projects, and watching F1 like crazy(obv LH44 on top)**  
 -  Reach me at: **[jainprabhav1437@gmail.com](mailto:jainprabhav1437@gmail.com)**  
 
 ---
