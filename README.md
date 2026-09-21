@@ -61,7 +61,7 @@
 ### My GitHub Activity
 
 <p align = "center">
-  <img src="https://github-readme-activity-graph.vercel.app/graph?username=Prabhav1437&theme=react-dark"/>
+  <img src="./assets/activity-graph.svg"/>
 </p>
 
 ---
