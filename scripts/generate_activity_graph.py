@@ -1,7 +1,6 @@
 import os
 import urllib.request
 import json
-from datetime import datetime, timedelta
 from xml.sax.saxutils import escape
 
 USERNAME = os.environ.get("GITHUB_USERNAME", "Prabhav1437")
@@ -9,7 +8,7 @@ TOKEN = os.environ["GITHUB_TOKEN"]
 
 API_URL = "https://api.github.com/graphql"
 
-query = """
+QUERY = """
 query($username: String!) {
   user(login: $username) {
     contributionsCollection {
@@ -29,11 +28,11 @@ query($username: String!) {
 """
 
 payload = json.dumps({
-    "query": query,
+    "query": QUERY,
     "variables": {
         "username": USERNAME
     }
-}).encode()
+}).encode("utf-8")
 
 request = urllib.request.Request(
     API_URL,
@@ -46,81 +45,120 @@ request = urllib.request.Request(
 )
 
 with urllib.request.urlopen(request) as response:
-    data = json.loads(response.read())
+    result = json.loads(response.read())
 
-if "errors" in data:
-    raise RuntimeError(json.dumps(data["errors"], indent=2))
+if "errors" in result:
+    raise RuntimeError(json.dumps(result["errors"], indent=2))
 
-calendar = data["data"]["user"]["contributionsCollection"]["contributionCalendar"]
+calendar = result["data"]["user"]["contributionsCollection"]["contributionCalendar"]
 
-weeks = calendar["weeks"]
-total = calendar["totalContributions"]
+all_days = []
 
-days = []
-
-for week in weeks:
+for week in calendar["weeks"]:
     for day in week["contributionDays"]:
-        days.append(day)
+        all_days.append(day)
+
+# --------------------------------------------------
+# Use the most recent 31 days
+# --------------------------------------------------
+
+days = all_days[-31:]
+
+counts = [
+    day["contributionCount"]
+    for day in days
+]
+
+dates = [
+    day["date"]
+    for day in days
+]
 
 # --------------------------------------------------
 # SVG configuration
 # --------------------------------------------------
 
-CELL = 11
-GAP = 3
+WIDTH = 1000
+HEIGHT = 350
 
-LEFT = 38
-TOP = 38
+LEFT = 70
+RIGHT = 30
+TOP = 55
+BOTTOM = 60
 
-WEEKS = len(weeks)
-ROWS = 7
-
-WIDTH = LEFT + WEEKS * (CELL + GAP) + 20
-HEIGHT = TOP + ROWS * (CELL + GAP) + 38
+GRAPH_WIDTH = WIDTH - LEFT - RIGHT
+GRAPH_HEIGHT = HEIGHT - TOP - BOTTOM
 
 BG = "#0d1117"
+GRID = "#21262d"
 TEXT = "#8b949e"
 TEXT_BRIGHT = "#c9d1d9"
+GREEN = "#39d353"
+GREEN_DARK = "#0e4429"
 
-LEVELS = [
-    "#161b22",
-    "#0e4429",
-    "#006d32",
-    "#26a641",
-    "#39d353",
-]
+# --------------------------------------------------
+# Helpers
+# --------------------------------------------------
 
-max_count = max(
-    (day["contributionCount"] for day in days),
-    default=1
-)
+def scale_x(index):
+    if len(days) == 1:
+        return LEFT
 
-def get_level(count):
-    if count == 0:
-        return 0
+    return LEFT + (
+        index / (len(days) - 1)
+    ) * GRAPH_WIDTH
 
-    ratio = count / max_count
 
-    if ratio <= 0.25:
-        return 1
-    elif ratio <= 0.50:
-        return 2
-    elif ratio <= 0.75:
-        return 3
-    else:
-        return 4
+max_value = max(counts) if counts else 1
 
+# Give graph a little headroom
+y_max = max(max_value, 1)
+
+# Round Y axis nicely
+if y_max <= 5:
+    y_max = 5
+elif y_max <= 10:
+    y_max = 10
+elif y_max <= 20:
+    y_max = 20
+elif y_max <= 50:
+    y_max = 50
+else:
+    y_max = ((y_max // 10) + 1) * 10
+
+
+def scale_y(value):
+    return TOP + GRAPH_HEIGHT - (
+        value / y_max
+    ) * GRAPH_HEIGHT
+
+
+# --------------------------------------------------
+# SVG
+# --------------------------------------------------
 
 svg = []
 
 svg.append(
-    f'<svg xmlns="http://www.w3.org/2000/svg" '
-    f'width="{WIDTH}" height="{HEIGHT}" '
-    f'viewBox="0 0 {WIDTH} {HEIGHT}">'
+    f'''<svg xmlns="http://www.w3.org/2000/svg"
+        width="{WIDTH}"
+        height="{HEIGHT}"
+        viewBox="0 0 {WIDTH} {HEIGHT}">'''
 )
 
+# Background
+
 svg.append(
-    f'<rect width="100%" height="100%" rx="8" fill="{BG}"/>'
+    f'''
+    <rect
+        x="0"
+        y="0"
+        width="{WIDTH}"
+        height="{HEIGHT}"
+        rx="18"
+        fill="{BG}"
+    />
+    '''
 )
 
 # --------------------------------------------------
@@ -128,98 +166,278 @@ svg.append(
 # --------------------------------------------------
 
 svg.append(
-    f'<text x="{LEFT}" y="20" '
-    f'font-family="Arial, sans-serif" '
-    f'font-size="12" font-weight="600" '
-    f'fill="{TEXT_BRIGHT}">'
-    f'{escape(USERNAME)} — {total} contributions'
-    f'</text>'
+    f'''
+    <text
+        x="{WIDTH / 2}"
+        y="30"
+        text-anchor="middle"
+        font-family="Arial, Helvetica, sans-serif"
+        font-size="15"
+        font-weight="600"
+        fill="{TEXT_BRIGHT}">
+        {escape(USERNAME)}'s Contribution Graph
+    </text>
+    '''
 )
 
 # --------------------------------------------------
-# Weekday labels
+# Horizontal grid + Y axis
 # --------------------------------------------------
 
-labels = [
-    (1, "Mon"),
-    (3, "Wed"),
-    (5, "Fri"),
-]
+GRID_LINES = 5
 
-for row, label in labels:
-    y = TOP + row * (CELL + GAP) + 9
+for i in range(GRID_LINES + 1):
+
+    value = round(
+        y_max * i / GRID_LINES
+    )
+
+    y = scale_y(value)
 
     svg.append(
-        f'<text x="4" y="{y}" '
-        f'font-family="Arial, sans-serif" '
-        f'font-size="9" fill="{TEXT}">'
-        f'{label}'
-        f'</text>'
+        f'''
+        <line
+            x1="{LEFT}"
+            y1="{y}"
+            x2="{WIDTH - RIGHT}"
+            y2="{y}"
+            stroke="{GRID}"
+            stroke-width="1"
+        />
+        '''
+    )
+
+    svg.append(
+        f'''
+        <text
+            x="{LEFT - 15}"
+            y="{y + 4}"
+            text-anchor="end"
+            font-family="Arial, Helvetica, sans-serif"
+            font-size="10"
+            fill="{TEXT}">
+            {value}
+        </text>
+        '''
     )
 
 # --------------------------------------------------
-# Contribution cells
+# Vertical grid lines
 # --------------------------------------------------
 
-for week_index, week in enumerate(weeks):
+for i in range(len(days)):
 
-    for day in week["contributionDays"]:
+    x = scale_x(i)
 
-        weekday = day["weekday"]
-        count = day["contributionCount"]
+    svg.append(
+        f'''
+        <line
+            x1="{x}"
+            y1="{TOP}"
+            x2="{x}"
+            y2="{TOP + GRAPH_HEIGHT}"
+            stroke="{GRID}"
+            stroke-width="1"
+            opacity="0.65"
+        />
+        '''
+    )
 
-        x = LEFT + week_index * (CELL + GAP)
-        y = TOP + weekday * (CELL + GAP)
+# --------------------------------------------------
+# Axis labels
+# --------------------------------------------------
 
-        level = get_level(count)
+svg.append(
+    f'''
+    <text
+        x="{WIDTH / 2}"
+        y="{HEIGHT - 12}"
+        text-anchor="middle"
+        font-family="Arial, Helvetica, sans-serif"
+        font-size="10"
+        fill="{TEXT}">
+        Days
+    </text>
+    '''
+)
 
-        date = escape(day["date"])
+svg.append(
+    f'''
+    <text
+        x="15"
+        y="{TOP + GRAPH_HEIGHT / 2}"
+        text-anchor="middle"
+        transform="rotate(-90 15 {TOP + GRAPH_HEIGHT / 2})"
+        font-family="Arial, Helvetica, sans-serif"
+        font-size="10"
+        fill="{TEXT}">
+        Contributions
+    </text>
+    '''
+)
 
-        svg.append(
-            f'<rect '
-            f'x="{x}" y="{y}" '
-            f'width="{CELL}" height="{CELL}" '
-            f'rx="2" '
-            f'fill="{LEVELS[level]}">'
-            f'<title>{date}: {count} contributions</title>'
-            f'</rect>'
+# --------------------------------------------------
+# Build graph points
+# --------------------------------------------------
+
+points = []
+
+for i, count in enumerate(counts):
+
+    x = scale_x(i)
+    y = scale_y(count)
+
+    points.append((x, y))
+
+# --------------------------------------------------
+# Smooth curve using cubic Bezier
+# --------------------------------------------------
+
+def create_smooth_path(points):
+
+    if len(points) < 2:
+        return ""
+
+    path = f"M {points[0][0]} {points[0][1]}"
+
+    for i in range(1, len(points)):
+
+        x0, y0 = points[i - 1]
+        x1, y1 = points[i]
+
+        midpoint = (x0 + x1) / 2
+
+        path += (
+            f" C {midpoint} {y0}, "
+            f"{midpoint} {y1}, "
+            f"{x1} {y1}"
         )
 
+    return path
+
+
+line_path = create_smooth_path(points)
+
 # --------------------------------------------------
-# Legend
+# Area under graph
 # --------------------------------------------------
 
-legend_y = HEIGHT - 18
-legend_x = WIDTH - 145
+area_path = line_path
 
-svg.append(
-    f'<text x="{legend_x - 30}" y="{legend_y + 9}" '
-    f'font-family="Arial, sans-serif" '
-    f'font-size="9" fill="{TEXT}">Less</text>'
+first_x = points[0][0]
+last_x = points[-1][0]
+bottom_y = TOP + GRAPH_HEIGHT
+
+area_path += (
+    f" L {last_x} {bottom_y}"
+    f" L {first_x} {bottom_y}"
+    f" Z"
 )
 
-for i, color in enumerate(LEVELS):
+svg.append(
+    f'''
+    <path
+        d="{area_path}"
+        fill="{GREEN}"
+        opacity="0.12"
+    />
+    '''
+)
 
-    x = legend_x + i * 15
+# --------------------------------------------------
+# Graph line
+# --------------------------------------------------
+
+svg.append(
+    f'''
+    <path
+        d="{line_path}"
+        fill="none"
+        stroke="{GREEN}"
+        stroke-width="3"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+    />
+    '''
+)
+
+# --------------------------------------------------
+# Data points
+# --------------------------------------------------
+
+for i, (x, y) in enumerate(points):
+
+    count = counts[i]
+    date = dates[i]
 
     svg.append(
-        f'<rect x="{x}" y="{legend_y}" '
-        f'width="10" height="10" rx="2" '
-        f'fill="{color}"/>'
+        f'''
+        <circle
+            cx="{x}"
+            cy="{y}"
+            r="4"
+            fill="{GREEN}"
+            stroke="{TEXT_BRIGHT}"
+            stroke-width="1.5">
+            <title>{escape(date)}: {count} contributions</title>
+        </circle>
+        '''
     )
 
-svg.append(
-    f'<text x="{legend_x + 85}" y="{legend_y + 9}" '
-    f'font-family="Arial, sans-serif" '
-    f'font-size="9" fill="{TEXT}">More</text>'
-)
+# --------------------------------------------------
+# X-axis date labels
+# --------------------------------------------------
+
+# Show roughly 10 labels instead of all 31
+label_indices = list(range(0, len(days), 3))
+
+if (len(days) - 1) not in label_indices:
+    label_indices.append(len(days) - 1)
+
+for i in label_indices:
+
+    x = scale_x(i)
+
+    # Convert YYYY-MM-DD -> day number
+    day_number = dates[i].split("-")[2].lstrip("0")
+
+    svg.append(
+        f'''
+        <text
+            x="{x}"
+            y="{TOP + GRAPH_HEIGHT + 22}"
+            text-anchor="middle"
+            font-family="Arial, Helvetica, sans-serif"
+            font-size="9"
+            fill="{TEXT}">
+            {day_number}
+        </text>
+        '''
+    )
+
+# --------------------------------------------------
+# Close SVG
+# --------------------------------------------------
 
 svg.append("</svg>")
 
 os.makedirs("assets", exist_ok=True)
 
-with open("assets/activity-graph.svg", "w", encoding="utf-8") as f:
-    f.write("\n".join(svg))
+with open(
+    "assets/activity-graph.svg",
+    "w",
+    encoding="utf-8"
+) as file:
+    file.write("\n".join(svg))
 
-print(f"Generated activity graph for {USERNAME}")
-print(f"Total contributions: {total}")
+print(
+    f"Generated contribution graph for {USERNAME}"
+)
+
+print(
+    f"Showing {len(days)} days"
+)
+
+print(
+    f"Maximum daily contributions: {max(counts) if counts else 0}"
+)
